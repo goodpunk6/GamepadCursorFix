@@ -1,0 +1,8 @@
+# compiled output (build in place, don't commit binaries)
+*.exe
+*.obj
+bin/
+obj/
+
+# diagnostic logs from tools/kl_monitor.ps1
+input_log*.txt
