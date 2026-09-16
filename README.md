@@ -65,7 +65,9 @@ Then delete the exe. That's the entire footprint.
 
 ### If a gamepad-grabbing window strands you (couch users)
 
-If the window that grabs your controller takes foreground and your controller-mouse tool yields, you may have no keyboard or mouse within reach — the usual "just click another window" advice doesn't apply. Controller-only recovery:
+The real fix: **use a pointer driver that never yields.** Some controller-mouse tools (notably Steam Input's desktop configuration) disengage when a gamepad-grabbing window is foreground — which strands you if the controller is your only pointing device. A simple XInput-polling mapper (e.g., JoyXoff) has no such logic and keeps working everywhere. Combine one of those with this filter and the couch scenario is fully covered.
+
+If you're ever stranded anyway:
 
 1. **Press the Guide (Xbox) button and open Big Picture Mode.** Steam owns the Guide chord below the level where it yields desktop control, and BPM takes *exclusive* controller access — focus jumps, white boxes, everything in this README's problem class stops existing for as long as you're in it. Navigate or launch from there.
 2. **Use the stick inside the grabbing window.** The window took your controller precisely because it accepts controller navigation — the stick that stopped moving your mouse usually still moves that window's own focus. Steer it to close or minimize itself, and your mapper takes over again.
