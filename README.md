@@ -61,6 +61,7 @@ Then delete the exe. That's the entire footprint.
 - **Unsigned hook exe:** the occasional antivirus heuristic may grumble at an unsigned executable installing a keyboard hook. The source is 70 lines — read it and compile it yourself.
 - **Narrow by design:** any app that *deliberately* handles `VK_GAMEPAD` keyboard events (rare — some UWP keyboard shortcuts) will stop receiving them. The range check is one line in `Proc()` if you need to narrow it.
 - **Windows may change the mechanism:** if a future build emits different VKs or moves to mouse-side injection, the filter needs a one-line update. The `tools/` monitor will show the new fingerprint.
+- **Direct gamepad input bypasses the filter:** a few modern apps consume controller input *directly* through their UI framework, in parallel to the injected-key pipeline this tool filters. Windows Terminal 1.24 is one (verified with event-level logging: focus moves with zero unfiltered keys in the stream, and Terminal 1.24 exposes no setting for it). In such windows, focus may still jump when you touch the controller (e.g., a focus box on the tab strip) and controller-mouse tools may yield while the window is focused. Clicking a normal window restores normal behavior.
 - **Not this tool's fault (but you'll blame it):** Steam Input yields the controller to gamepad-aware windows (e.g., minimizing Settings can leave the stick dead until you restart Steam). That's Steam Input behavior — this tool filters keyboard events only and cannot affect mouse movement.
 
 ## Files
