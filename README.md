@@ -61,7 +61,16 @@ Then delete the exe. That's the entire footprint.
 - **Unsigned hook exe:** the occasional antivirus heuristic may grumble at an unsigned executable installing a keyboard hook. The source is 70 lines — read it and compile it yourself.
 - **Narrow by design:** any app that *deliberately* handles `VK_GAMEPAD` keyboard events (rare — some UWP keyboard shortcuts) will stop receiving them. The range check is one line in `Proc()` if you need to narrow it.
 - **Windows may change the mechanism:** if a future build emits different VKs or moves to mouse-side injection, the filter needs a one-line update. The `tools/` monitor will show the new fingerprint.
-- **Direct gamepad input bypasses the filter:** a few modern apps consume controller input *directly* through their UI framework, in parallel to the injected-key pipeline this tool filters. Windows Terminal 1.24 is one (verified with event-level logging: focus moves with zero unfiltered keys in the stream, and Terminal 1.24 exposes no setting for it). In such windows, focus may still jump when you touch the controller (e.g., a focus box on the tab strip) and controller-mouse tools may yield while the window is focused. Clicking a normal window restores normal behavior.
+- **Direct gamepad input bypasses the filter:** a few modern apps consume controller input *directly* through their UI framework, in parallel to the injected-key pipeline this tool filters. Windows Terminal 1.24 is one (verified with event-level logging: focus moves with zero unfiltered keys in the stream, and Terminal 1.24 exposes no setting for it). In such windows, focus may still jump when you touch the controller (e.g., a focus box on the tab strip) and controller-mouse tools may yield while the window is focused.
+
+### If a gamepad-grabbing window strands you (couch users)
+
+If the window that grabs your controller takes foreground and your controller-mouse tool yields, you may have no keyboard or mouse within reach — the usual "just click another window" advice doesn't apply. Controller-only recovery:
+
+1. **Press the Guide (Xbox) button and open Big Picture Mode.** Steam owns the Guide chord below the level where it yields desktop control, and BPM takes *exclusive* controller access — focus jumps, white boxes, everything in this README's problem class stops existing for as long as you're in it. Navigate or launch from there.
+2. **Use the stick inside the grabbing window.** The window took your controller precisely because it accepts controller navigation — the stick that stopped moving your mouse usually still moves that window's own focus. Steer it to close or minimize itself, and your mapper takes over again.
+
+If you have a keyboard or mouse anywhere: click any normal window and control returns instantly.
 - **Not this tool's fault (but you'll blame it):** Steam Input yields the controller to gamepad-aware windows (e.g., minimizing Settings can leave the stick dead until you restart Steam). That's Steam Input behavior — this tool filters keyboard events only and cannot affect mouse movement.
 
 ## Files
