@@ -32,6 +32,15 @@ Swallowed range (`WinUser.h`):
 | `0xD3–0xD6` | left stick up/down/right/left |
 | `0xD7–0xDA` | right stick up/down/right/left |
 
+## Recommended pairing
+
+This filter blocks the injected gamepad key stream — it does not move your cursor. We **highly recommend** pairing it with a controller-mouse tool that reads the controller directly and never yields:
+
+- **JoyXoff** (verified pairing — controller-mouse keeps working everywhere, including in front of gamepad-grabbing windows)
+- **Controller Companion** (same architecture, same expectation)
+
+Avoid using **Steam Input's desktop configuration** as your pointer driver: it disengages whenever a gamepad-aware window (Windows Terminal, Settings, other modern XAML apps) is foreground — which can strand you if the controller is your only pointing device. See *"If a gamepad-grabbing window strands you"* below for details and recovery paths.
+
 ## Install
 
 No SDK needed — every Windows 10/11 ships the .NET Framework compiler:
