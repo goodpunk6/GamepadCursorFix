@@ -39,7 +39,7 @@ This filter blocks the injected gamepad key stream — it does not move your cur
 - **JoyXoff** (verified pairing — controller-mouse keeps working everywhere, including in front of gamepad-grabbing windows)
 - **Controller Companion** (same architecture, same expectation)
 
-Avoid using **Steam Input's desktop configuration** as your pointer driver: it disengages whenever a gamepad-aware window (Windows Terminal, Settings, other modern XAML apps) is foreground — which can strand you if the controller is your only pointing device. See *"If a gamepad-grabbing window strands you"* below for details and recovery paths.
+**Steam Input also works** with this filter — the white-box fix applies the same way. One caveat: Steam Input's desktop configuration disengages whenever a gamepad-aware window (Windows Terminal, Settings, other modern XAML apps) is foreground, which can strand you if the controller is your *only* pointing device. If you use your PC from the couch, prefer a non-yielding mapper; if you're at a desk with a mouse within reach, Steam Input is perfectly fine. See *"If a gamepad-grabbing window strands you"* below for details and recovery paths.
 
 ## Install
 
