@@ -1,49 +1,49 @@
 # GamepadCursorFix
 
-Kills Windows' hidden gamepad **focus navigation** — the fix for the "white box" / phantom-selection bug that haunts controller-as-mouse setups.
+Kills Windows' hidden gamepad **focus navigation** - the fix for the "white box" / phantom-selection bug that haunts controller-as-mouse setups.
 
 ## The bug
 
-If you use a controller as your mouse (Steam Input, JoyXoff, Controller Companion, reWASD, ...), you may know this one: move the virtual mouse around and, sooner or later, an icon, shortcut, or tab suddenly gets a white selection/focus rectangle around it. The taskbar pops up when you press A or X. Clicks occasionally land twice. It's followed users across machines, mappers, and Windows versions for years — and there is no setting anywhere that turns it off.
+If you use a controller as your mouse (Steam Input, JoyXoff, Controller Companion, reWASD, ...), you may know this one: move the virtual mouse around and, sooner or later, an icon, shortcut, or tab suddenly gets a white selection/focus rectangle around it. The taskbar pops up when you press A or X. Clicks occasionally land twice. It's followed users across machines, mappers, and Windows versions for years - and there is no setting anywhere that turns it off.
 
 ## The cause
 
-Windows' shell translates gamepad input into **synthetic keyboard events in the `VK_GAMEPAD_*` virtual-key range** (0xC3–0xDA, defined in `WinUser.h`) and feeds them to gamepad-aware UI surfaces as focus navigation.
+Windows' shell translates gamepad input into **synthetic keyboard events in the `VK_GAMEPAD_*` virtual-key range** (0xC3-0xDA, defined in `WinUser.h`) and feeds them to gamepad-aware UI surfaces as focus navigation.
 
-Your mapper moves the pointer. Windows' layer moves keyboard focus. Two consumers, one controller — and the focus one has no off switch.
+Your mapper moves the pointer. Windows' layer moves keyboard focus. Two consumers, one controller - and the focus one has no off switch.
 
-You can prove this on your own machine: run the input monitor in `tools/` and you'll see a stream of `INJECTED`-flagged `VK_GAMEPAD_*` keys riding alongside your controller input. On the machine this was developed on (Windows 11 build 26200), the source was the shell itself — `explorer.exe` with `xinput1_4.dll` loaded and `dwm.exe` with `gameinput.dll` — surviving every kill, disable, and uninstall thrown at it.
+You can prove this on your own machine: run the input monitor in `tools/` and you'll see a stream of `INJECTED`-flagged `VK_GAMEPAD_*` keys riding alongside your controller input. On the machine this was developed on (Windows 11 build 26200), the source was the shell itself - `explorer.exe` with `xinput1_4.dll` loaded and `dwm.exe` with `gameinput.dll` - surviving every kill, disable, and uninstall thrown at it.
 
 ## The fix
 
-A ~70-line utility installs a global low-level keyboard hook (`WH_KEYBOARD_LL`) and **silently discards every event in the `VK_GAMEPAD` range before any application can receive it.** Everything else passes through untouched.
+A small utility installs a global low-level keyboard hook (`WH_KEYBOARD_LL`) and discards keyboard-hook events in the `VK_GAMEPAD` range. Everything else passes through untouched. Direct controller input bypasses this hook.
 
-Your mapper and your games are unaffected: they read the controller directly (XInput/HID). The swallowed events are the shell's shadow copy of your input — no legitimate software depends on them.
+Mappers and games that read XInput/HID directly keep receiving controller input. Apps that deliberately use `VK_GAMEPAD` keyboard events lose those events while the filter is running.
 
 Swallowed range (`WinUser.h`):
 
 | Codes | Meaning |
 |---|---|
-| `0xC3–0xC8` | A, B, X, Y, right/left shoulder |
-| `0xC9–0xCA` | left/right trigger |
-| `0xCB–0xCE` | D-pad up/down/left/right |
-| `0xCF–0xD0` | menu, view |
-| `0xD1–0xD2` | left/right thumbstick buttons |
-| `0xD3–0xD6` | left stick up/down/right/left |
-| `0xD7–0xDA` | right stick up/down/right/left |
+| `0xC3-0xC8` | A, B, X, Y, right/left shoulder |
+| `0xC9-0xCA` | left/right trigger |
+| `0xCB-0xCE` | D-pad up/down/left/right |
+| `0xCF-0xD0` | menu, view |
+| `0xD1-0xD2` | left/right thumbstick buttons |
+| `0xD3-0xD6` | left stick up/down/right/left |
+| `0xD7-0xDA` | right stick up/down/right/left |
 
 ## Recommended pairing
 
-This filter blocks the injected gamepad key stream — it does not move your cursor. We **highly recommend** pairing it with a controller-mouse tool that reads the controller directly and never yields:
+This filter blocks the injected gamepad key stream - it does not move your cursor. We **highly recommend** pairing it with a controller-mouse tool that reads the controller directly and never yields:
 
-- **JoyXoff** (verified pairing — controller-mouse keeps working everywhere, including in front of gamepad-grabbing windows)
+- **JoyXoff** (verified pairing - controller-mouse keeps working everywhere, including in front of gamepad-grabbing windows)
 - **Controller Companion** (same architecture, same expectation)
 
-**Steam Input also works** with this filter — the white-box fix applies the same way. One caveat: Steam Input's desktop configuration disengages whenever a gamepad-aware window (Windows Terminal, Settings, other modern XAML apps) is foreground, which can strand you if the controller is your *only* pointing device. If you use your PC from the couch, prefer a non-yielding mapper; if you're at a desk with a mouse within reach, Steam Input is perfectly fine. See *"If a gamepad-grabbing window strands you"* below for details and recovery paths.
+**Steam Input also works** with this filter - the white-box fix applies the same way. One caveat: Steam Input's desktop configuration disengages whenever a gamepad-aware window (Windows Terminal, Settings, other modern XAML apps) is foreground, which can strand you if the controller is your *only* pointing device. If you use your PC from the couch, prefer a non-yielding mapper; if you're at a desk with a mouse within reach, Steam Input is perfectly fine. See *"If a gamepad-grabbing window strands you"* below for details and recovery paths.
 
 ## Install
 
-No SDK needed — every Windows 10/11 ships the .NET Framework compiler:
+No SDK needed - every Windows 10/11 ships the .NET Framework compiler:
 
 ```
 %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /target:winexe /out:GamepadCursorFix.exe GamepadCursorFix.cs
@@ -54,6 +54,16 @@ Run `GamepadCursorFix.exe`. To autostart at logon:
 ```
 reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v GamepadCursorFix /t REG_SZ /d "\"C:\Path\To\GamepadCursorFix.exe\""
 ```
+
+### Optional compatibility mode
+
+Run `GamepadCursorFix.exe --injected-only` to block only gamepad keyboard events marked `LLKHF_INJECTED`. Unflagged gamepad keyboard events pass through in this mode. This may preserve compatibility with apps that use those events, but may also let unwanted navigation through on some Windows builds. Without arguments, the original full-range filtering behavior is preserved. Stop the existing instance before changing modes; launching a second instance does not reconfigure the first.
+
+Startup and message-loop failures display an error and return exit code 1. Unknown arguments return 2; `--help` shows usage and returns 0. The filter releases its hook when its message loop exits. Windows can silently remove a low-level hook after a callback timeout; this utility does not detect or automatically recover from that condition.
+
+### Development checks
+
+The Windows workflow builds x86 and x64 executables and runs `tests/FilterTests.cs` against each. Tests cover all 256 virtual keys and 256 flag values in both modes, plus callback handling of gamepad key-down/up and system-key messages. These checks do not simulate the shell, physical controller input, or a particular mapper. Verify those interactively before treating a build as a confirmed fix for your setup.
 
 ## Remove
 
@@ -67,28 +77,29 @@ Then delete the exe. That's the entire footprint.
 ## Caveats
 
 - **Session-scoped:** low-level hooks need an interactive logon session; this is a user-namespace tool, not a service.
-- **Unsigned hook exe:** the occasional antivirus heuristic may grumble at an unsigned executable installing a keyboard hook. The source is 70 lines — read it and compile it yourself.
-- **Narrow by design:** any app that *deliberately* handles `VK_GAMEPAD` keyboard events (rare — some UWP keyboard shortcuts) will stop receiving them. The range check is one line in `Proc()` if you need to narrow it.
+- **Unsigned hook exe:** the occasional antivirus heuristic may grumble at an unsigned executable installing a keyboard hook. Read the source and compile it yourself.
+- **Narrow by design:** any app that *deliberately* handles `VK_GAMEPAD` keyboard events (rare - some UWP keyboard shortcuts) will stop receiving them. The range check is one line in `Proc()` if you need to narrow it.
 - **Windows may change the mechanism:** if a future build emits different VKs or moves to mouse-side injection, the filter needs a one-line update. The `tools/` monitor will show the new fingerprint.
 - **Direct gamepad input bypasses the filter:** a few modern apps consume controller input *directly* through their UI framework, in parallel to the injected-key pipeline this tool filters. Windows Terminal 1.24 is one (verified with event-level logging: focus moves with zero unfiltered keys in the stream, and Terminal 1.24 exposes no setting for it). In such windows, focus may still jump when you touch the controller (e.g., a focus box on the tab strip) and controller-mouse tools may yield while the window is focused.
 
 ### If a gamepad-grabbing window strands you (couch users)
 
-The real fix: **use a pointer driver that never yields.** Some controller-mouse tools (notably Steam Input's desktop configuration) disengage when a gamepad-grabbing window is foreground — which strands you if the controller is your only pointing device. A simple XInput-polling mapper (e.g., JoyXoff) has no such logic and keeps working everywhere. Combine one of those with this filter and the couch scenario is fully covered.
+The real fix: **use a pointer driver that never yields.** Some controller-mouse tools (notably Steam Input's desktop configuration) disengage when a gamepad-grabbing window is foreground - which strands you if the controller is your only pointing device. A simple XInput-polling mapper (e.g., JoyXoff) has no such logic and keeps working everywhere. Combine one of those with this filter and the couch scenario is fully covered.
 
 If you're ever stranded anyway:
 
-1. **Press the Guide (Xbox) button and open Big Picture Mode.** Steam owns the Guide chord below the level where it yields desktop control, and BPM takes *exclusive* controller access — focus jumps, white boxes, everything in this README's problem class stops existing for as long as you're in it. Navigate or launch from there.
-2. **Use the stick inside the grabbing window.** The window took your controller precisely because it accepts controller navigation — the stick that stopped moving your mouse usually still moves that window's own focus. Steer it to close or minimize itself, and your mapper takes over again.
+1. **Press the Guide (Xbox) button and open Big Picture Mode.** Steam owns the Guide chord below the level where it yields desktop control, and BPM takes *exclusive* controller access - focus jumps, white boxes, everything in this README's problem class stops existing for as long as you're in it. Navigate or launch from there.
+2. **Use the stick inside the grabbing window.** The window took your controller precisely because it accepts controller navigation - the stick that stopped moving your mouse usually still moves that window's own focus. Steer it to close or minimize itself, and your mapper takes over again.
 
 If you have a keyboard or mouse anywhere: click any normal window and control returns instantly.
-- **Not this tool's fault (but you'll blame it):** Steam Input yields the controller to gamepad-aware windows (e.g., minimizing Settings can leave the stick dead until you restart Steam). That's Steam Input behavior — this tool filters keyboard events only and cannot affect mouse movement.
+- **Not this tool's fault (but you'll blame it):** Steam Input yields the controller to gamepad-aware windows (e.g., minimizing Settings can leave the stick dead until you restart Steam). That's Steam Input behavior - this tool filters keyboard events only and cannot affect mouse movement.
 
 ## Files
 
-- `GamepadCursorFix.cs` — the fix
-- `tools/InputMonitor.cs`, `tools/kl_monitor.ps1` — the diagnostic used to find the mechanism: logs every keyboard/mouse event with its `INJECTED` flag plus foreground-window changes. Run it, reproduce the bug, tap <kbd>ESC</kbd> on a physical keyboard to leave a timestamp marker, then read the log before the marker.
+- `GamepadCursorFix.cs` - the fix
+- `tools/InputMonitor.cs`, `tools/kl_monitor.ps1` - the diagnostic used to find the mechanism: logs every keyboard/mouse event with its `INJECTED` flag plus foreground-window changes. Run it, reproduce the bug, tap <kbd>ESC</kbd> on a physical keyboard to leave a timestamp marker, then read the log before the marker.
 
 ## License
 
-MIT — do whatever, no warranty. If it fixes years of phantom boxes for you, a star is appreciated.
+MIT - do whatever, no warranty. If it fixes years of phantom boxes for you, a star is appreciated.
+
